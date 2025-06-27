@@ -5,18 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Average Cost Calculator</title>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
       font-family: Arial, sans-serif;
+      width: 100%;
+      /* allow scrolling */
+      overflow-x: hidden;
+    }
+    body {
       max-width: 600px;
       margin: 2rem auto;
       padding: 0 1rem;
       position: relative;
-      overflow: hidden;
+      /* remove hidden to allow vertical scroll */
     }
     /* Watermark */
     body::before {
       content: "JackAbS";
-      position: fixed;
+      position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(-30deg);
@@ -26,12 +33,46 @@
       pointer-events: none;
       z-index: -1;
     }
-    h1 { text-align: center; }
-    .section { margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
-    .section label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-    .section input { width: 100%; padding: 0.5rem; margin-bottom: 0.75rem; border: 1px solid #ccc; border-radius: 4px; }
-    .result { background: #f9f9f9; padding: 1rem; border-radius: 6px; font-weight: bold; text-align: center; }
-    button { display: block; width: 100%; padding: 0.75rem; font-size: 1rem; border: none; background: #007BFF; color: white; border-radius: 4px; cursor: pointer; }
+    h1 { text-align: center; margin-bottom: 1rem; }
+    .section {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .section label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    .section input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .result {
+      background: #f9f9f9;
+      padding: 1rem;
+      border-radius: 6px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: none;
+      background: #007BFF;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
     button:hover { background: #0056b3; }
   </style>
 </head>
@@ -77,22 +118,18 @@
         return;
       }
 
-      // Case 1: Target average specified
       if (!isNaN(targetAvg)) {
         const x = ((targetAvg * oldQty) - (oldAvg * oldQty)) / (newPrice - targetAvg);
         if (x > 0)
           resultBox.textContent = `To reach an overall avg of ₹${targetAvg.toFixed(2)}, buy ${Math.ceil(x)} units.`;
         else
           resultBox.textContent = 'Target avg is already achieved or not reachable with this price.';
-      }
-      // Case 2: New quantity specified
-      else if (!isNaN(newQty)) {
+      } else if (!isNaN(newQty)) {
         const totalCost = (oldAvg * oldQty) + (newPrice * newQty);
         const totalQty = oldQty + newQty;
         const newAvg = totalCost / totalQty;
         resultBox.textContent = `New overall average cost: ₹${newAvg.toFixed(2)} (Total Qty: ${totalQty})`;
-      }
-      else {
+      } else {
         resultBox.textContent = 'Enter either a target average or planned buy quantity.';
       }
     });

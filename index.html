@@ -99,7 +99,15 @@
     <label for="newQty">Planned Buy Quantity <small>(optional)</small>:</label>
     <input type="number" id="newQty" placeholder="e.g. 200" step="1" />
 
-    <button id="calculateBtn">Calculate</button>
+    <label for="assetType">Asset Type:</label>
+<select id="assetType">
+  <option value="">— Select —</option>
+  <option value="gold">Gold ETF</option>
+  <option value="silver">Silver ETF</option>
+</select>
+
+<button id="calculateBtn">Calculate</button>
+<button id="analyzeBtn">Calculate & Analyze</button>
   </div>
 
   <div class="result" id="resultBox">Enter values and click Calculate</div>
@@ -133,6 +141,47 @@
         resultBox.textContent = 'Enter either a target average or planned buy quantity.';
       }
     });
+    // --- START AI ANALYSIS LISTENER ---
+document.getElementById('analyzeBtn').addEventListener('click', async () => {
+  const oldAvg    = parseFloat(document.getElementById('oldAvg').value)   || 0;
+  const oldQty    = parseFloat(document.getElementById('oldQty').value)   || 0;
+  const newPrice  = parseFloat(document.getElementById('newPrice').value) || 0;
+  const targetAvg = parseFloat(document.getElementById('targetAvg').value);
+  const newQty    = parseFloat(document.getElementById('newQty').value);
+  const asset     = document.getElementById('assetType').value;
+  const resultBox = document.getElementById('resultBox');
+
+  if (!asset) {
+    resultBox.textContent = 'Please select Gold or Silver.';
+    return;
+  }
+  if (!oldAvg || !oldQty || !newPrice) {
+    resultBox.textContent = 'Fill in Current Avg, Quantity & New Price.';
+    return;
+  }
+
+  const mode = !isNaN(targetAvg) ? 'target' : 'plan';
+  resultBox.textContent = 'Analyzing…';
+
+  const resp = await fetch('/.netlify/functions/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ oldAvg, oldQty, newPrice, targetAvg, newQty, mode, asset })
+  });
+
+  if (!resp.ok) {
+    resultBox.textContent = 'Service error—please try again.';
+    return;
+  }
+
+  const { suggestion, rationale } = await resp.json();
+  resultBox.innerHTML = `
+    <div>${suggestion}</div>
+    <hr>
+    <div><strong>AI Insight:</strong> ${rationale}</div>
+  `;
+});
+// --- END AI ANALYSIS LISTENER ---
   </script>
 </body>
 </html>

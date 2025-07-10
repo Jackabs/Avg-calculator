@@ -35,11 +35,10 @@ const fxRes = await fetch(
   `https://api.exchangerate.host/convert?from=${symbol}&to=INR`
 );
 const fxJson = await fxRes.json();
-const rateInfo = fxJson.info;
-if (!rateInfo || !rateInfo.rate) {
-  throw new Error("ExchangeRate API error");
+if (!fxJson || typeof fxJson.result !== 'number') {
+  throw new Error("ExchangeRate API error: no result");
 }
-const spotPrice = parseFloat(rateInfo.rate);
+const spotPrice = parseFloat(fxJson.result);
 
     // 3) Build the AI prompt
     const prompt = `

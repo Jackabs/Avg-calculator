@@ -2,8 +2,6 @@
   "name": "avg-calculator",
   "version": "1.0.0",
   "type": "commonjs",
-  "dependencies": {
-    "openai": "^4.3.0"
-  }
+  "dependencies": {}
 }
 

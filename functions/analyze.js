@@ -1,6 +1,4 @@
 // functions/analyze.js
-const OpenAI = require("openai");
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 exports.handler = async (event) => {
   try {
@@ -22,30 +20,27 @@ exports.handler = async (event) => {
         (newPrice - targetAvg);
       suggestionCalc =
         x > 0
-          ? `Buy ${Math.ceil(x)} units to hit ₹${targetAvg.toFixed(
-              2
-            )} avg.`
+          ? `Buy ${Math.ceil(x)} units to hit ₹${targetAvg.toFixed(2)} avg.`
           : "Target avg already met or not reachable.";
     } else {
       const totalCost = oldAvg * oldQty + newPrice * newQty;
       const totalQty = oldQty + newQty;
       const newAvg = totalCost / totalQty;
-      suggestionCalc = `New avg cost → ₹${newAvg.toFixed(
-        2
-      )} (Total Qty: ${totalQty})`;
+      suggestionCalc = `New avg cost → ₹${newAvg.toFixed(2)} (Total Qty: ${totalQty})`;
     }
 
     // 2) Fetch real-time spot price from Alpha Vantage
     const symbol = asset === "gold" ? "XAU" : "XAG";
-    const alphaRes = await fetch(
-      `https://www.alphavantage.co/query?function=COMMODITY_EXCHANGE_RATE&from_symbol=${symbol}&to_symbol=INR&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
+    const metaRes = await fetch(
+      `https://www.alphavantage.co/query?function=COMMODITY_EXCHANGE_RATE` +
+        `&from_symbol=${symbol}&to_symbol=INR&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
     );
-    const alphaData = await alphaRes.json();
+    const metaData = await metaRes.json();
     const spotPrice = parseFloat(
-      alphaData["Realtime Commodity Exchange Rate"]["5. Exchange Rate"]
+      metaData["Realtime Commodity Exchange Rate"]["5. Exchange Rate"]
     );
 
-    // 3) Build AI prompt
+    // 3) Build the AI prompt
     const prompt = `
 You are a financial analyst. Current ${asset.toUpperCase()} spot price in INR is ₹${spotPrice}.
 The user wants to ${
@@ -54,19 +49,30 @@ The user wants to ${
         : `calculate new avg after buying ${newQty} units at ₹${newPrice}.`
     }
 Considering global market trends and geopolitical factors, advise if this is a good range to buy a ${asset.toUpperCase()} ETF now, and why.
-`;
+    `.trim();
 
-    // 4) Call OpenAI
-    const chat = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a helpful financial analyst." },
-        { role: "user", content: prompt },
-      ],
+    // 4) Call OpenAI REST API directly
+    const oaRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a helpful financial analyst." },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 300,
+      }),
     });
-    const rationale = chat.choices[0].message.content.trim();
+    const oaJson = await oaRes.json();
+    const rationale =
+      oaJson.choices?.[0]?.message?.content?.trim() ||
+      "No insight returned.";
 
-    // 5) Return both suggestion and rationale
+    // 5) Return both the calc suggestion and the AI rationale
     return {
       statusCode: 200,
       body: JSON.stringify({ suggestion: suggestionCalc, rationale }),
@@ -78,3 +84,4 @@ Considering global market trends and geopolitical factors, advise if this is a g
     };
   }
 };
+

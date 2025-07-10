@@ -170,9 +170,11 @@ document.getElementById('analyzeBtn').addEventListener('click', async () => {
   });
 
   if (!resp.ok) {
-    resultBox.textContent = 'Service error—please try again.';
-    return;
-  }
+  const errBody = await resp.json().catch(()=>({error: 'Invalid JSON'}));
+  resultBox.textContent = `Error from service: ${errBody.error || JSON.stringify(errBody)}`;
+  return;
+}
+
 
   const { suggestion, rationale } = await resp.json();
   resultBox.innerHTML = `

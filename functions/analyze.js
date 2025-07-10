@@ -29,16 +29,19 @@ exports.handler = async (event) => {
       suggestionCalc = `New avg cost → ₹${newAvg.toFixed(2)} (Total Qty: ${totalQty})`;
     }
 
-    // 2) Fetch real-time spot price from Alpha Vantage
-    const symbol = asset === "gold" ? "XAU" : "XAG";
-    const metaRes = await fetch(
-      `https://www.alphavantage.co/query?function=COMMODITY_EXCHANGE_RATE` +
-        `&from_symbol=${symbol}&to_symbol=INR&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
-    );
-    const metaData = await metaRes.json();
-    const spotPrice = parseFloat(
-      metaData["Realtime Commodity Exchange Rate"]["5. Exchange Rate"]
-    );
+    /// 2) Fetch real-time spot price via FX endpoint
+const symbol = asset === "gold" ? "XAU" : "XAG";
+const metaRes = await fetch(
+  `https://www.alphavantage.co/query` +
+  `?function=CURRENCY_EXCHANGE_RATE&from_currency=${symbol}` +
+  `&to_currency=INR&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
+);
+const metaData = await metaRes.json();
+const rateBlock = metaData["Realtime Currency Exchange Rate"];
+if (!rateBlock) {
+  throw new Error("AlphaVantage: unexpected response");
+}
+const spotPrice = parseFloat(rateBlock["5. Exchange Rate"]);
 
     // 3) Build the AI prompt
     const prompt = `
